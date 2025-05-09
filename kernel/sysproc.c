@@ -5,6 +5,9 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "petersonlock.h"
+
+extern struct petersonlock peterson_locks[15];
 
 uint64
 sys_exit(void)
@@ -88,4 +91,91 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_peterson_create(void)
+{
+  for (int i = 0; i < 15; i++) {
+    if (__sync_lock_test_and_set(&peterson_locks[i].used, 1) == 0) {
+      __sync_synchronize(); // memory barrier
+      peterson_locks[i].flag[0] = 0;
+      peterson_locks[i].flag[1] = 0;
+      peterson_locks[i].turn = 0;
+      return i;
+    }
+  }
+  return -1;
+}
+
+uint64
+sys_peterson_acquire(void)
+{
+  int lock_id, role;
+  argint(0, &lock_id);
+  argint(1, &role);
+
+  // Validate input
+  if (lock_id < 0 || lock_id >= 15 || (role != 0 && role != 1))
+    return -1;
+
+  struct petersonlock *lock = &peterson_locks[lock_id];
+  if (lock->used == 0)
+    return -1;
+
+  int other = 1 - role;
+
+  lock->flag[role] = 1;
+  __sync_synchronize(); // memory barrier
+  lock->turn = role;
+  __sync_synchronize(); // ensure `turn` is visible
+
+  while (lock->flag[other] && lock->turn == role) {
+    yield();  // avoid busy-waiting
+  }
+
+  return 0;
+}
+
+uint64
+sys_peterson_release(void)
+{
+  int lock_id, role;
+  argint(0, &lock_id);
+  argint(1, &role);
+
+  if (lock_id < 0 || lock_id >= 15 || (role != 0 && role != 1))
+    return -1;
+
+  struct petersonlock *lock = &peterson_locks[lock_id];
+  if (lock->used == 0)
+    return -1;
+
+  __sync_synchronize(); // ensure CS is done before release
+  lock->flag[role] = 0;
+
+  return 0;
+}
+
+uint64
+sys_peterson_destroy(void)
+{
+  int lock_id;
+  argint(0, &lock_id);
+
+  if (lock_id < 0 || lock_id >= 15)
+    return -1;
+
+  struct petersonlock *lock = &peterson_locks[lock_id];
+  if (lock->used == 0)
+    return -1;
+
+  // Clear the lock
+  lock->flag[0] = 0;
+  lock->flag[1] = 0;
+  lock->turn = 0;
+  __sync_synchronize();
+  lock->used = 0;
+
+  return 0;
 }
