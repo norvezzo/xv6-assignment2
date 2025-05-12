@@ -9,6 +9,9 @@
         "proc.h": "c",
         "fcntl.h": "c",
         "user.h": "c",
-        "sleeplock.h": "c"
+        "sleeplock.h": "c",
+        "stddef.h": "c",
+        "stdlib.h": "c",
+        "stat.h": "c"
     },
 }
