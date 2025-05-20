@@ -13,14 +13,15 @@ int tournament_create(int processes) {
   if (processes <= 0 || processes > MAX_PROCESSES)
     return -1;
 
-  // Must be a power of two
+  // checking if the number of processes is a power of two
   if ((processes & (processes - 1)) != 0)
     return -1;
 
   total_levels = 0;
   int temp = processes;
+  // computing log2(processes)
   while (temp >>= 1)
-    total_levels++;  // compute log2(processes)
+    total_levels++;  
 
   int num_locks = processes - 1;
   lock_ids = malloc(sizeof(int) * num_locks);
@@ -50,7 +51,7 @@ int tournament_create(int processes) {
     }
   }
 
-  // Parent process waits
+  // parent process waits for all children to finish
   for (int i = 0; i < processes; i++)
     wait(0);
 

@@ -98,7 +98,7 @@ sys_peterson_create(void)
 {
   for (int i = 0; i < 15; i++) {
     if (__sync_lock_test_and_set(&peterson_locks[i].used, 1) == 0) {
-      __sync_synchronize(); // memory barrier
+      __sync_synchronize();
       peterson_locks[i].flag[0] = 0;
       peterson_locks[i].flag[1] = 0;
       peterson_locks[i].turn = 0;
@@ -115,7 +115,6 @@ sys_peterson_acquire(void)
   argint(0, &lock_id);
   argint(1, &role);
 
-  // Validate input
   if (lock_id < 0 || lock_id >= 15 || (role != 0 && role != 1))
     return -1;
 
@@ -126,12 +125,12 @@ sys_peterson_acquire(void)
   int other = 1 - role;
 
   lock->flag[role] = 1;
-  __sync_synchronize(); // memory barrier
+  __sync_synchronize();
   lock->turn = role;
-  __sync_synchronize(); // ensure `turn` is visible
+  __sync_synchronize();
 
   while (lock->flag[other] && lock->turn == role) {
-    yield();  // avoid busy-waiting
+    yield();
   }
 
   return 0;
@@ -151,7 +150,7 @@ sys_peterson_release(void)
   if (lock->used == 0)
     return -1;
 
-  __sync_synchronize(); // ensure CS is done before release
+  __sync_synchronize(); // ensure critical section is done before release
   lock->flag[role] = 0;
 
   return 0;
@@ -170,7 +169,6 @@ sys_peterson_destroy(void)
   if (lock->used == 0)
     return -1;
 
-  // Clear the lock
   lock->flag[0] = 0;
   lock->flag[1] = 0;
   lock->turn = 0;

@@ -1,5 +1,5 @@
 struct petersonlock {
-  int used;           // Is this lock active
-  int flag[2];        // Intent flags for the two processes
-  int turn;           // Whose turn is it
+  int used;
+  int flag[2];
+  int turn;
 };

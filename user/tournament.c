@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  // Critical section
+  // critical section
   printf("PID %d (tournament ID %d) in critical section\n", getpid(), id);
 
   if (tournament_release() < 0) {
